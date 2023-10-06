@@ -54,7 +54,7 @@ function getShopItemsSortedByProfitability() {
       name: upgrade.name,
       upgrade,
       l: store.querySelector(`#store .upgrade[data-id='${upgrade.id}']`),
-      profitability: getUpgradeValue(upgrade) / upgrade.basePrice,
+      profitability: getUpgradeCps(upgrade) / upgrade.basePrice,
     }));
   var shopitems = [...products, ...upgrades];
   shopitems.sort((a, b) => b.profitability - a.profitability);
@@ -73,7 +73,7 @@ function extractPercent(desc) {
   return parseFloat(match) / 100;
 }
 
-function getUpgradeValue(upgrade) {
+function getUpgradeCps(upgrade) {
   if (/grandmas$/i.test(upgrade.name)) {
     var [buildingclause, clausegrandmas] = /\. .+ gain .+ per (\d+) grandma/.exec(upgrade.desc.toLowerCase()) || ["", "1"];
     clausegrandmas = parseInt(clausegrandmas);
@@ -123,10 +123,6 @@ function lastOf(arr) {
 
 function cleanup() {
   Object.values(window.cookieclickerhacks.intervals).forEach(clearInterval);
-  clearInterval(window.cookieclickerhacks.autoclick);
-  clearInterval(window.cookieclickerhacks.autoshimmer);
-  clearInterval(window.cookieclickerhacks.autoupgrade);
-  clearInterval(window.cookieclickerhacks.autobuy);
 }
 
 var intervals = {
@@ -154,7 +150,7 @@ window.cookieclickerhacks = {
   extractNum,
   extractPercent,
   getShopItemsSortedByProfitability,
-  getUpgradeValue,
+  getUpgradeCps,
   lastOf,
   intervals,
   cleanup,
