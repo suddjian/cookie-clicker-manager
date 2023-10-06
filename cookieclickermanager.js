@@ -1,4 +1,4 @@
-/* convert this to a bookmarklet and it'll manage your cookie clicker game for you undetected */
+// convert this to a bookmarklet and it'll manage your cookie clicker game for you undetected
 
 var enabledupgrades = store.getElementsByClassName("upgrade enabled");
 var shimmers = document.getElementsByClassName("shimmer");
@@ -6,7 +6,7 @@ var shimmers = document.getElementsByClassName("shimmer");
 var clicksps = 100;
 
 function clickOn(l) {
-  /* unknown why, but .click() is unreliable. */
+  // unknown why, but .click() is unreliable.
   var e = new Event("click", { bubbles: true, cancelable: true });
   l.dispatchEvent(e);
 }
@@ -87,11 +87,11 @@ function getUpgradeValue(upgrade) {
     return extractPercent(upgrade.desc) * getClickCookiesPs();
   }
   if (/The mouse and cursors are /i.test(upgrade.desc)) {
-    /* twice as efficient */
+    // twice as efficient
     return Game.cookiesPsByType.Cursor + getClickCookiesPs();
   }
   if (/ fingers$/i.test(upgrade.name)) {
-    /* plus X cookies for each non-cursor building */
+    // plus X cookies for each non-cursor building
     var buildings = Game.BuildingsOwned - Game.Objects.Cursor.amount;
     return extractNum(upgrade.desc) * buildings * (Game.Objects.Cursor.amount + clicksps);
   }
