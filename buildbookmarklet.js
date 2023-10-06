@@ -1,9 +1,13 @@
 const fs = require('fs');
 
 const script = fs.readFileSync('cookieclickermanager.js').toString();
-
-const cleanedscript = script.replace(/\/\/.*(\n|$)/, "$1").replace(/\/\*(?:\*(?!\/)|[^*])*\*\//gs, " ").replace(/\n\n+/, '\n');
-
-const bookmarklet = 'javascript:' + encodeURIComponent(`(function(){${cleanedscript}})`);
+const linecomments = /\/\/.*(?:\n|$)/gm;
+const blockcomments = /\/\*(?:\*(?!\/)|[^*])*\*\//gs;
+const cleanedscript = script
+  .replace(linecomments, '\n')
+  .replace(blockcomments, '\n')
+  .replace(/^\s+/, '')
+  .replace(/\s\s+/gm, ' ');
+const bookmarklet = 'javascript:' + encodeURIComponent(`(function(){${cleanedscript}})()`);
 
 console.log(bookmarklet);
