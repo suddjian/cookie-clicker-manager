@@ -5,6 +5,10 @@ var shimmers = document.getElementsByClassName("shimmer");
 
 var clicksps = 100;
 
+
+/*:･ﾟ✧*:･ﾟ✧ -----  UI ACTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
+
 function clickOn(l) {
   // unknown why, but .click() is unreliable.
   var e = new Event("click", { bubbles: true, cancelable: true });
@@ -40,6 +44,8 @@ function purchaseOptimalShopItem() {
   }
 }
 
+/*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
 function getShopItemsSortedByProfitability() {
   var products = Object.values(Game.Objects)
     .filter(o => !o.locked)
@@ -47,7 +53,7 @@ function getShopItemsSortedByProfitability() {
       name: product.name,
       product,
       l: product.l,
-      profitability: (product.storedTotalCps/product.amount) * Game.globalCpsMult / product.price
+      profitability: getProductCps(product) / product.price
     }));
   var upgrades = Game.UpgradesInStore
     .map((upgrade, i) => ({
@@ -61,16 +67,14 @@ function getShopItemsSortedByProfitability() {
   return shopitems;
 }
 
-function extractNum(desc) {
-  var match = /((?:\d*\.)?\d+)/.exec(desc);
-  if (!match) return 0;
-  return parseFloat(match);
+/*:･ﾟ✧*:･ﾟ✧ -----  CPS CALCULATIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
+function getProductCps(product) {
+  return (product.storedTotalCps / product.amount) * Game.globalCpsMult
 }
 
-function extractPercent(desc) {
-  var match = /((?:\d*\.)?\d+)\%/.exec(desc);
-  if (!match) return 0;
-  return parseFloat(match) / 100;
+function getClickCps() {
+  return !intervals.click ? 0 : Game.computedMouseCps * clicksps;
 }
 
 function getUpgradeCps(upgrade) {
@@ -80,15 +84,15 @@ function getUpgradeCps(upgrade) {
     var building = Object.values(Game.Objects)
       .find((building) => buildingclause.includes(building.plural));
     var percent = extractPercent(buildingclause);
-    var buildingbonus = !building  ?  0  :  Game.cookiesPsByType[building.name] * percent * (Game.Objects.Grandma.amount / clausegrandmas);
-    return Game.cookiesPsByType.Grandma + buildingbonus;
+    var buildingbonus = !building  ?  0  :  getProductCps(building.name) * percent * (Game.Objects.Grandma.amount / clausegrandmas);
+    return getProductCps(Game.Objects.Grandma) + buildingbonus;
   }
   if (/ mouse$/i.test(upgrade.name)) {
-    return extractPercent(upgrade.desc) * getClickCookiesPs();
+    return extractPercent(upgrade.desc) * getClickCps();
   }
   if (/The mouse and cursors are /i.test(upgrade.desc)) {
     // twice as efficient
-    return Game.cookiesPsByType.Cursor + getClickCookiesPs();
+    return getProductCps(Game.Objects.Cursor) + getClickCps();
   }
   if (/ fingers$/i.test(upgrade.name)) {
     // plus X cookies for each non-cursor building
@@ -108,18 +112,30 @@ function getUpgradeCps(upgrade) {
     return Game.cookiesPs * extractPercent(upgrade.desc);
   }
   if (upgrade.buildingTie) {
-    return Game.cookiesPsByType[upgrade.buildingTie.name];
+    return getProductCps(upgrade.buildingTie);
   }
   return 0;
 }
 
-function getClickCookiesPs() {
-  return !intervals.click ? 0 : Game.computedMouseCps * clicksps;
+/*:･ﾟ✧*:･ﾟ✧ -----  UTILITY FUNCTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
+function extractNum(desc) {
+  var match = /((?:\d*\.)?\d+)/.exec(desc);
+  if (!match) return 0;
+  return parseFloat(match);
+}
+
+function extractPercent(desc) {
+  var match = /((?:\d*\.)?\d+)\%/.exec(desc);
+  if (!match) return 0;
+  return parseFloat(match) / 100;
 }
 
 function lastOf(arr) {
   return arr[arr.length - 1];
 }
+
+/*:･ﾟ✧*:･ﾟ✧ -----  SCRIPT LIFECYCLE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function cleanup() {
   Object.values(window.cookieclickerhacks.intervals).forEach(clearInterval);
