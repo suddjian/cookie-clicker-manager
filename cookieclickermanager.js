@@ -1,13 +1,8 @@
-// convert this to a bookmarklet and it'll manage your cookie clicker game for you undetected
-
-var enabledupgrades = store.getElementsByClassName("upgrade enabled");
-var shimmers = document.getElementsByClassName("shimmer");
+// a nice middle manager to grow your cookie empire 
 
 var clicksps = 100;
 
-
 /*:･ﾟ✧*:･ﾟ✧ -----  UI ACTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
-
 
 function clickOn(l) {
   // unknown why, but .click() is unreliable.
@@ -20,21 +15,13 @@ function clickBigCookie() {
 }
 
 function clickShimmer() {
-  Array.from(shimmers).forEach(s => clickOn(s));
+  Array.from(document.getElementsByClassName("shimmer")).forEach(s => clickOn(s));
 }
 
 function harvestLumpIfRipe() {
   if (Date.now() - Game.lumpT > Game.lumpRipeAge) {
     clickOn(lumps);
   }
-}
-
-function purchaseCheapestUpgrade() {
-  clickOn(enabledupgrades[0]);
-}
-
-function purchaseBiggestUpgrade() {
-  clickOn(lastOf(enabledupgrades));
 }
 
 function purchaseOptimalShopItem() {
@@ -117,7 +104,7 @@ function getUpgradeCps(upgrade) {
   return 0;
 }
 
-/*:･ﾟ✧*:･ﾟ✧ -----  UTILITY FUNCTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+/*:･ﾟ✧*:･ﾟ✧ -----  CONVENIENCE FUNCTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function extractNum(desc) {
   var match = /((?:\d*\.)?\d+)/.exec(desc);
@@ -149,19 +136,17 @@ var intervals = {
   lump: setInterval(harvestLumpIfRipe, 2999),
 };
 
-
 if (window.cookieclickerhacks != null) {
   cleanup();
+  console.log("cookie clicker manager restarted");
+} else {
+  console.log("cookie clicker manager started");
 }
 
 window.cookieclickerhacks = {
-  enabledupgrades,
-  shimmers,
   clicksps,
   clickOn,
   clickBigCookie,
-  purchaseCheapestUpgrade,
-  purchaseBiggestUpgrade,
   purchaseOptimalShopItem,
   extractNum,
   extractPercent,
