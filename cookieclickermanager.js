@@ -50,6 +50,11 @@ function getShopItemsSortedByProfitability() {
       profitability: getUpgradeCps(upgrade) / upgrade.basePrice,
     }));
   var shopitems = [...products, ...upgrades];
+  for (let item in shopitems) {
+    if (isNaN(item)) {
+      console.warn(`[CCM] Be advised, bad profitability calculation for ${item.name}`)
+    }
+  }
   shopitems.sort((a, b) => b.profitability - a.profitability);
   return shopitems;
 }
@@ -57,7 +62,7 @@ function getShopItemsSortedByProfitability() {
 /*:･ﾟ✧*:･ﾟ✧ -----  CPS CALCULATIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function getProductCps(product) {
-  return (product.storedTotalCps / product.amount) * Game.globalCpsMult
+  return product.amount ? product.storedTotalCps / product.amount : product.storedCps * Game.globalCpsMult
 }
 
 function getClickCps() {
@@ -69,9 +74,8 @@ function getUpgradeCps(upgrade) {
     var [buildingclause, clausegrandmas] = /\. .+ gain .+ per (\d+) grandma/.exec(upgrade.desc.toLowerCase()) || ["", "1"];
     clausegrandmas = parseInt(clausegrandmas);
     var building = Object.values(Game.Objects)
-      .find((building) => buildingclause.includes(building.plural));
-    var percent = extractPercent(buildingclause);
-    var buildingbonus = !building  ?  0  :  getProductCps(building.name) * percent * (Game.Objects.Grandma.amount / clausegrandmas);
+      .find((b) => buildingclause.includes(b.plural));
+    var buildingbonus = !building  ?  0  :  getProductCps(building) * extractPercent(buildingclause) * (Game.Objects.Grandma.amount / clausegrandmas);
     return getProductCps(Game.Objects.Grandma) + buildingbonus;
   }
   if (/ mouse$/i.test(upgrade.name)) {
@@ -92,14 +96,14 @@ function getUpgradeCps(upgrade) {
   if (/golden cookie/i.test(upgrade.desc)) {
     return 0.07 * Game.cookiesPs;
   }
-  if (upgrade.pool === "kitten" || /^kitten /i.test(upgrade.name)) {
+  if (upgrade.pool === "kitten" || /^kitten /i.test(upgrade.name)) {  
     return Game.cookiesPs * 0.5;
   }
   if (/^cookie production multiplier /i.test(upgrade.desc)) {
     return Game.cookiesPs * extractPercent(upgrade.desc);
   }
   if (upgrade.buildingTie) {
-    return getProductCps(upgrade.buildingTie);
+    return upgrade.buildingTie.storedTotalCps * Game.globalCpsMult;
   }
   return 0;
 }
@@ -151,6 +155,8 @@ window.cookieclickerhacks = {
   extractNum,
   extractPercent,
   getShopItemsSortedByProfitability,
+  getClickCps,
+  getProductCps,
   getUpgradeCps,
   lastOf,
   intervals,
