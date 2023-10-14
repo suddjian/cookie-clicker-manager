@@ -24,11 +24,14 @@ function harvestLumpIfRipe() {
   }
 }
 
-function purchaseOptimalShopItem() {
+function shopOptimally() {
   var item = getShopItemsSortedByProfitability()[0];
-  if (item && item.profitability > 0) {
+  if (item && item.profitability > 0 && item.l.matches(".product:not(.disabled), .upgrade.enabled")) {
     clickOn(item.l);
+    console.log(`Cookie manager: Purchased ${item.name}`);
+    return item
   }
+  return null
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
@@ -52,7 +55,7 @@ function getShopItemsSortedByProfitability() {
   var shopitems = [...products, ...upgrades];
   for (let item in shopitems) {
     if (isNaN(item)) {
-      console.warn(`[CCM] Be advised, bad profitability calculation for ${item.name}`)
+      console.warn(`Cookie manager: Be advised, bad profitability calculation for ${item.name}`)
     }
   }
   shopitems.sort((a, b) => b.profitability - a.profitability);
@@ -135,7 +138,7 @@ function cleanup() {
 var intervals = {
   click: setInterval(clickBigCookie, 1000 / clicksps),
   /* primes bcuz */
-  buy: setInterval(purchaseOptimalShopItem, 997),
+  buy: setInterval(shopOptimally, 997),
   shimmer: setInterval(clickShimmer, 1999),
   lump: setInterval(harvestLumpIfRipe, 2999),
 };
@@ -151,7 +154,7 @@ window.cookieclickerhacks = {
   clicksps,
   clickOn,
   clickBigCookie,
-  purchaseOptimalShopItem,
+  shopOptimally,
   extractNum,
   extractPercent,
   getShopItemsSortedByProfitability,
