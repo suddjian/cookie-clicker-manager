@@ -127,16 +127,16 @@ function adjustStockPortfolio() {
   var analysis = analyzeStockMarket();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(good => {
-    console.log(`Cookie manager: buying ${good.symbol}`);
+    console.log(`Cookie manager: buying ${good.symbol} at ${good.val}`);
     clickOn(document.getElementById(good.l.id + "_Max"));
   });
   toSell.forEach(good => {
-    console.log(`Cookie manager: selling ${good.symbol}`);
+    console.log(`Cookie manager: selling ${good.symbol} at ${good.val}`);
     clickOn(document.getElementById(good.l.id + "_-All"));
   });
 }
 
-function analyzeStockMarket(percentile=0.1) {
+function analyzeStockMarket(percentile=0.2) {
   // buy low sell high
   var goods = Object.values(StockMarket.goods).filter(good => !good.hidden);
   if (goods.length < 3) {
