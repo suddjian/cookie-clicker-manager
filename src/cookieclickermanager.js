@@ -136,7 +136,7 @@ function adjustStockPortfolio() {
   });
 }
 
-function analyzeStockMarket(percentile=0.2) {
+function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
   // buy low sell high
   var goods = Object.values(StockMarket.goods).filter(good => !good.hidden);
   if (goods.length < 3) {
@@ -153,9 +153,9 @@ function analyzeStockMarket(percentile=0.2) {
   var minVal = allVals.reduce(
     (running, val) => val < running ? val : running
   );
-  var range = (maxVal - minVal) * percentile;
-  var buyAt = minVal + range;
-  var sellAt = maxVal - range;
+  var range = maxVal - minVal;
+  var buyAt = minVal + (range * buyPercentile);
+  var sellAt = maxVal - (range * sellPercentile);
   var toBuy = goods.filter(
     good => good.val < buyAt && good.stock < StockMarket.getGoodMaxStock(good)
   );
