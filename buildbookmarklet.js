@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const script = fs.readFileSync('cookieclickermanager.js').toString();
+const script = fs.readFileSync('src/cookieclickermanager.js').toString();
 const linecomments = /\/\/.*(?:\n|$)/gm;
 const blockcomments = /\/\*(?:\*(?!\/)|[^*])*\*\//gs;
 const cleanedscript = script

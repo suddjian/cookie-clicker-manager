@@ -1,8 +1,8 @@
 {
   "name": "cookie-clicker-manager",
   "scripts": {
-    "lint": "eslint cookieclickermanager.js",
-    "lint-fix": "eslint cookieclickermanager.js --fix"
+    "lint": "eslint ./**/*.js",
+    "lint-fix": "eslint ./**/*.js --fix"
   },
   "devDependencies": {
     "eslint": "^8.51.0"
