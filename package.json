@@ -2,7 +2,8 @@
   "name": "cookie-clicker-manager",
   "scripts": {
     "lint": "eslint ./**/*.js",
-    "lint-fix": "eslint ./**/*.js --fix"
+    "lint-fix": "eslint ./**/*.js --fix",
+    "build-win": "node buildbookmarklet.js | clip"
   },
   "devDependencies": {
     "eslint": "^8.51.0"

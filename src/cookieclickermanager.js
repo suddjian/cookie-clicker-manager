@@ -2,10 +2,13 @@
 
 const Game = window.Game;
 const StockMarket = Game.Objects.Bank.minigame;
+const Grimoire = Game.Objects["Wizard tower"].minigame;
 const bigCookie = document.getElementById("bigCookie");
 const lumps = document.getElementById("lumps");
 const store = document.getElementById("store");
+const buffs = document.getElementById("buffs");
 const bankContent = document.getElementById("bankContent");
+const grimoireSpells = document.getElementById("grimoireSpells");
 
 var clicksps = 100;
 
@@ -174,7 +177,19 @@ function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
   };
 }
 
-/*:･ﾟ✧*:･ﾟ✧ -----  CONVENIENCE FUNCTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+/*:･ﾟ✧*:･ﾟ✧ -----  GRIMOIRE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
+function handOfFateToBoostBuffs() {
+  if (
+    grimoireSpells.checkVisibility()
+    && buffs.children.length >= 2
+    && Grimoire.getSpellCost(Grimoire.spells["hand of fate"]) <= Grimoire.magic
+  ) {
+    const handOfFateL = grimoireSpells.children[Grimoire.spells["hand of fate"].id];
+    console.log("Cookie manager forcing the hand of fate to boost buffs");
+    clickOn(handOfFateL);
+  }
+}
 
 function extractNum(desc) {
   var match = /((?:\d*\.)?\d+)/.exec(desc);
@@ -202,6 +217,7 @@ var intervals = {
   click: setInterval(clickBigCookie, 1000 / clicksps),
   /* primes bcuz */
   buy: setInterval(shopOptimally, 997),
+  hofboost: setInterval(handOfFateToBoostBuffs, 1117),
   shimmer: setInterval(clickShimmer, 1999),
   lump: setInterval(harvestLumpIfRipe, 2999),
   stockmarket: setInterval(adjustStockPortfolio, 4999),
@@ -227,6 +243,7 @@ window.cookieclickerhacks = {
   getUpgradeCps,
   adjustStockPortfolio,
   analyzeStockMarket,
+  handOfFateToBoostBuffs,
   lastOf,
   intervals,
   cleanup,
