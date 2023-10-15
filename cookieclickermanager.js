@@ -1,4 +1,11 @@
-// a nice middle manager to grow your cookie empire 
+// a nice middle manager to grow your cookie empire
+
+const Game = window.Game;
+const StockMarket = Game.Objects.Bank.minigame;
+const bigCookie = document.getElementById("bigCookie");
+const lumps = document.getElementById("lumps");
+const store = document.getElementById("store");
+const bankContent = document.getElementById("bankContent");
 
 var clicksps = 100;
 
@@ -29,9 +36,9 @@ function shopOptimally() {
   if (item && item.profitability > 0 && item.l.matches(".product:not(.disabled), .upgrade.enabled")) {
     clickOn(item.l);
     console.log(`Cookie manager: Purchased ${item.name}`);
-    return item
+    return item;
   }
-  return null
+  return null;
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
@@ -46,7 +53,7 @@ function getShopItemsSortedByProfitability() {
       profitability: getProductCps(product) / product.price
     }));
   var upgrades = Game.UpgradesInStore
-    .map((upgrade, i) => ({
+    .map((upgrade) => ({
       name: upgrade.name,
       upgrade,
       l: store.querySelector(`#store .upgrade[data-id='${upgrade.id}']`),
@@ -55,7 +62,7 @@ function getShopItemsSortedByProfitability() {
   var shopitems = [...products, ...upgrades];
   for (let item in shopitems) {
     if (isNaN(item)) {
-      console.warn(`Cookie manager: Be advised, bad profitability calculation for ${item.name}`)
+      console.warn(`Cookie manager: Be advised, bad profitability calculation for ${item.name}`);
     }
   }
   shopitems.sort((a, b) => b.profitability - a.profitability);
@@ -65,7 +72,7 @@ function getShopItemsSortedByProfitability() {
 /*:･ﾟ✧*:･ﾟ✧ -----  CPS CALCULATIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function getProductCps(product) {
-  return product.amount ? product.storedTotalCps / product.amount : product.storedCps * Game.globalCpsMult
+  return product.amount ? product.storedTotalCps / product.amount : product.storedCps * Game.globalCpsMult;
 }
 
 function getClickCps() {
@@ -111,6 +118,62 @@ function getUpgradeCps(upgrade) {
   return 0;
 }
 
+/*:･ﾟ✧*:･ﾟ✧ -----  STOCK MARKET  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
+function adjustStockPortfolio() {
+  if (!bankContent.checkVisibility()) {
+    return;
+  }
+  var analysis = analyzeStockMarket();
+  var { toBuy, toSell } = analysis;
+  toBuy.forEach(good => {
+    console.log(`Cookie manager: buying ${good.symbol}`);
+    clickOn(document.getElementById(good.l.id + "_Max"));
+  });
+  toSell.forEach(good => {
+    console.log(`Cookie manager: selling ${good.symbol}`);
+    clickOn(document.getElementById(good.l.id + "_-All"));
+  });
+}
+
+function analyzeStockMarket(percentile=0.1) {
+  // buy low sell high
+  var goods = Object.values(StockMarket.goods).filter(good => !good.hidden);
+  if (goods.length < 3) {
+    return null;
+  }
+  goods.sort((a, b) => a.val - b.val);
+  var allVals = goods.reduce(
+    (acc, good) => acc.concat(good.vals),
+    []
+  );
+  var maxVal = allVals.reduce(
+    (running, val) => val > running ? val : running
+  );
+  var minVal = allVals.reduce(
+    (running, val) => val < running ? val : running
+  );
+  var range = (maxVal - minVal) * percentile;
+  var buyAt = minVal + range;
+  var sellAt = maxVal - range;
+  var toBuy = goods.filter(
+    good => good.val < buyAt && good.stock < StockMarket.getGoodMaxStock(good)
+  );
+  var toSell = goods.filter(
+    good => good.val > sellAt && good.stock > 0
+  );
+  toSell.reverse();
+  return {
+    goods,
+    maxVal,
+    minVal,
+    buyAt,
+    sellAt,
+    toBuy,
+    toSell,
+  };
+}
+
 /*:･ﾟ✧*:･ﾟ✧ -----  CONVENIENCE FUNCTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function extractNum(desc) {
@@ -120,7 +183,7 @@ function extractNum(desc) {
 }
 
 function extractPercent(desc) {
-  var match = /((?:\d*\.)?\d+)\%/.exec(desc);
+  var match = /((?:\d*\.)?\d+)%/.exec(desc);
   if (!match) return 0;
   return parseFloat(match) / 100;
 }
@@ -141,6 +204,7 @@ var intervals = {
   buy: setInterval(shopOptimally, 997),
   shimmer: setInterval(clickShimmer, 1999),
   lump: setInterval(harvestLumpIfRipe, 2999),
+  stockmarket: setInterval(adjustStockPortfolio, 4999),
 };
 
 if (window.cookieclickerhacks != null) {
@@ -161,6 +225,8 @@ window.cookieclickerhacks = {
   getClickCps,
   getProductCps,
   getUpgradeCps,
+  adjustStockPortfolio,
+  analyzeStockMarket,
   lastOf,
   intervals,
   cleanup,
