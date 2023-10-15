@@ -1,6 +1,6 @@
 A nice middle manager to grow your cookie empire.
 
-This script builds as a bookmarklet. To get the bookmarklet in your clipboard, run:
+This is a script that you can save as a bookmarklet. To get the bookmarklet in your clipboard, run:
 
 (unix):
 ```
