@@ -18,7 +18,7 @@ on:
 
 jobs:
   eslint:
-    name: Run eslint scanning
+    name: Linter
     runs-on: ubuntu-latest
     permissions:
       contents: read
