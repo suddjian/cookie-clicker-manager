@@ -75,7 +75,7 @@ function getShopItemsSortedByProfitability() {
 /*:･ﾟ✧*:･ﾟ✧ -----  CPS CALCULATIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function getProductCps(product) {
-  return product.amount ? product.storedTotalCps / product.amount : product.storedCps * Game.globalCpsMult;
+  return (product.amount ? product.storedTotalCps / product.amount : product.storedCps) * Game.globalCpsMult;
 }
 
 function getClickCps() {
@@ -116,7 +116,7 @@ function getUpgradeCps(upgrade) {
     return Game.cookiesPs * extractPercent(upgrade.desc);
   }
   if (upgrade.buildingTie) {
-    return upgrade.buildingTie.storedTotalCps * Game.globalCpsMult;
+    return getProductCps(upgrade.buildingTie);
   }
   return 0;
 }
@@ -156,9 +156,8 @@ function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
   var minVal = allVals.reduce(
     (running, val) => val < running ? val : running
   );
-  var range = maxVal - minVal;
-  var buyAt = minVal + (range * buyPercentile);
-  var sellAt = maxVal - (range * sellPercentile);
+  var buyAt = minVal + (maxVal * buyPercentile);
+  var sellAt = maxVal - (maxVal * sellPercentile);
   var toBuy = goods.filter(
     good => good.val < buyAt && good.stock < StockMarket.getGoodMaxStock(good)
   );
@@ -190,6 +189,8 @@ function handOfFateToBoostBuffs() {
     clickOn(handOfFateL);
   }
 }
+
+/*:･ﾟ✧*:･ﾟ✧ -----  UTILITIES  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function extractNum(desc) {
   var match = /((?:\d*\.)?\d+)/.exec(desc);
