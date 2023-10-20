@@ -38,7 +38,7 @@ function shopOptimally() {
   var item = getShopItemsSortedByProfitability()[0];
   if (item && item.profitability > 0 && item.l.matches(".product:not(.disabled), .upgrade.enabled")) {
     clickOn(item.l);
-    console.log(`Cookie manager: Purchased ${item.name}`);
+    console.log(`%cCookie manager: Purchased ${item.name}`, "font-weight:bold");
     return item;
   }
   return null;
@@ -130,11 +130,11 @@ function adjustStockPortfolio() {
   var analysis = analyzeStockMarket();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(good => {
-    console.log(`Cookie manager: buying ${good.symbol} at ${good.val}`);
+    console.log(`%cCookie manager: buying ${good.symbol} at ${good.val}`, "color:sienna");
     clickOn(document.getElementById(good.l.id + "_Max"));
   });
   toSell.forEach(good => {
-    console.log(`Cookie manager: selling ${good.symbol} at ${good.val}`);
+    console.log(`%cCookie manager: selling ${good.symbol} at ${good.val}`, "color:green");
     clickOn(document.getElementById(good.l.id + "_-All"));
   });
 }
@@ -185,7 +185,7 @@ function handOfFateToBoostBuffs() {
     && Grimoire.getSpellCost(Grimoire.spells["hand of fate"]) <= Grimoire.magic
   ) {
     const handOfFateL = grimoireSpells.children[Grimoire.spells["hand of fate"].id];
-    console.log("Cookie manager forcing the hand of fate to boost buffs");
+    console.log("%cCookie manager forcing the hand of fate to boost buffs", "color:slateblue");
     clickOn(handOfFateL);
   }
 }
