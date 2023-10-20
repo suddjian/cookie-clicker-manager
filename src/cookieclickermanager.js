@@ -116,7 +116,7 @@ function getUpgradeCps(upgrade) {
     return Game.cookiesPs * extractPercent(upgrade.desc);
   }
   if (upgrade.buildingTie) {
-    return getProductCps(upgrade.buildingTie);
+    return getProductCps(upgrade.buildingTie) * upgrade.buildingTie.amount;
   }
   return 0;
 }
