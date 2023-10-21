@@ -10,7 +10,6 @@ const store = document.getElementById("store");
 const buffs = document.getElementById("buffs");
 const bankContent = document.getElementById("bankContent");
 const grimoireSpells = document.getElementById("grimoireSpells");
-const actualRunModHook = Game.runModHook.bind(Game);
 
 var clicksps = 100;
 var intervals = {};
@@ -51,7 +50,6 @@ function shopGreedily() {
   if (item && item.profitability > 0 && item.l.matches(".product:not(.disabled), .upgrade.enabled")) {
     clickOn(item.l);
     console.log(`%cCookie manager: Purchased ${item.name}`, "font-weight:bold");
-    followup(shopGreedily);
     return item;
   }
 }
@@ -229,43 +227,11 @@ function lastOf(arr) {
   return arr[arr.length - 1];
 }
 
-/*:･ﾟ✧*:･ﾟ✧ -----  FOLLOWUP SYSTEM  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
-
-var followupfns = [];
-var requiredhooks = ["logic", "draw"];
-var hithooks = [];
-
-function followup(fn) {
-  followupfns.push(fn);
-}
-
-function tickFollowups() {
-  followupfns.forEach((fn, i) => {
-    var index = timers.length;
-    var timer = setTimeout(() => {
-      timers.splice(index, 1);
-      fn();
-    }, i * 100);
-    timers.push(timer);
-  });
-  followupfns = [];
-}
-
-function hijackedRunModHook(hook, ...args) {
-  actualRunModHook(hook, ...args);
-  hithooks.push(hook);
-  if (!requiredhooks.some(req => !hithooks.includes(req))) {
-    tickFollowups();
-    hithooks = [];
-  }
-}
-
 /*:･ﾟ✧*:･ﾟ✧ -----  SCRIPT LIFECYCLE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function cleanup() {
   Object.values(window.cookieclickerhacks.intervals).forEach(clearInterval);
   timers.forEach(clearTimeout);
-  Game.runModHook = actualRunModHook;
 }
 
 function init() {
@@ -281,8 +247,6 @@ function init() {
   intervals.shimmer = setInterval(clickShimmer, 1999);
   intervals.lump = setInterval(harvestLumpIfRipe, 2999);
   intervals.stockmarket = setInterval(adjustStockPortfolio, 4999);
-
-  Game.runModHook = hijackedRunModHook;
 
   if (isRestart) {
     console.log("cookie clicker manager restarted");
@@ -309,7 +273,6 @@ window.cookieclickerhacks = {
   analyzeStockMarket,
   handOfFateToBoostBuffs,
   lastOf,
-  followup,
   intervals,
   timers,
   cleanup,
