@@ -12,6 +12,8 @@ const bankContent = document.getElementById("bankContent");
 const grimoireSpells = document.getElementById("grimoireSpells");
 
 var clicksps = 100;
+var intervals = {};
+var timers = [];
 
 /*:･ﾟ✧*:･ﾟ✧ -----  UI ACTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
@@ -35,14 +37,20 @@ function harvestLumpIfRipe() {
   }
 }
 
-function shopOptimally() {
+function shopGreedily() {
+  if (
+    store.querySelector("#storeBulkBuy.selected") == null
+    || store.querySelector("#storeBulk1.selected") == null
+  ) {
+    return;
+  }
   var item = getShopItemsSortedByProfitability()[0];
   if (item && item.profitability > 0 && item.l.matches(".product:not(.disabled), .upgrade.enabled")) {
     clickOn(item.l);
     console.log(`%cCookie manager: Purchased ${item.name}`, "font-weight:bold");
+    followup(shopGreedily);
     return item;
   }
-  return null;
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
@@ -219,34 +227,50 @@ function lastOf(arr) {
   return arr[arr.length - 1];
 }
 
+function followup(fn) {
+  var followupidx = timers.length;
+  var timer = setTimeout(() => {
+    timers.splice(followupidx, 1);
+    fn();
+  }, 1);
+  timers.push(timer);
+  return timer;
+}
+
 /*:･ﾟ✧*:･ﾟ✧ -----  SCRIPT LIFECYCLE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function cleanup() {
   Object.values(window.cookieclickerhacks.intervals).forEach(clearInterval);
+  timers.forEach(clearTimeout);
 }
 
-var intervals = {
-  click: setInterval(clickBigCookie, 1000 / clicksps),
+function init() {
+  var isRestart = window.cookieclickerhacks != null;
+  if (isRestart) {
+    cleanup();
+  }
+
+  intervals.click = setInterval(clickBigCookie, 1000 / clicksps);
   /* primes bcuz */
-  buy: setInterval(shopOptimally, 997),
-  hofboost: setInterval(handOfFateToBoostBuffs, 1117),
-  shimmer: setInterval(clickShimmer, 1999),
-  lump: setInterval(harvestLumpIfRipe, 2999),
-  stockmarket: setInterval(adjustStockPortfolio, 4999),
-};
-
-if (window.cookieclickerhacks != null) {
-  cleanup();
-  console.log("cookie clicker manager restarted");
-} else {
-  console.log("cookie clicker manager started");
+  intervals.buy = setInterval(shopGreedily, 997);
+  intervals.hofboost = setInterval(handOfFateToBoostBuffs, 1117);
+  intervals.shimmer = setInterval(clickShimmer, 1999);
+  intervals.lump = setInterval(harvestLumpIfRipe, 2999);
+  intervals.stockmarket = setInterval(adjustStockPortfolio, 4999);
+  if (isRestart) {
+    console.log("cookie clicker manager restarted");
+  } else {
+    console.log("cookie clicker manager started");
+  }
 }
+
+init();
 
 window.cookieclickerhacks = {
   clicksps,
   clickOn,
   clickBigCookie,
-  shopOptimally,
+  shopGreedily,
   extractNum,
   extractPercent,
   getShopItemsSortedByProfitability,
@@ -258,6 +282,8 @@ window.cookieclickerhacks = {
   analyzeStockMarket,
   handOfFateToBoostBuffs,
   lastOf,
+  followup,
   intervals,
+  timers,
   cleanup,
 };
