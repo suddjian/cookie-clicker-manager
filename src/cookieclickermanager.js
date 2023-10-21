@@ -179,6 +179,9 @@ function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
 }
 
 function getStockTradeStr(good, amount) {
+  if (amount == null) {
+    amount = good.stock;
+  }
   var $ = Beautify(good.val * amount);
   var cookies = Beautify(Game.cookiesPsRawHighest * good.val * amount);
   return `${Beautify(amount)} ${good.symbol} at $${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`;
