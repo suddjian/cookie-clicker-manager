@@ -10,6 +10,7 @@ const store = document.getElementById("store");
 const buffs = document.getElementById("buffs");
 const bankContent = document.getElementById("bankContent");
 const grimoireSpells = document.getElementById("grimoireSpells");
+const actualRunModHook = Game.runModHook.bind(Game);
 
 var clicksps = 100;
 var intervals = {};
@@ -37,6 +38,8 @@ function harvestLumpIfRipe() {
   }
 }
 
+/*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
 function shopGreedily() {
   if (
     store.querySelector("#storeBulkBuy.selected") == null
@@ -52,8 +55,6 @@ function shopGreedily() {
     return item;
   }
 }
-
-/*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function getShopItemsSortedByProfitability() {
   var products = Object.values(Game.Objects)
@@ -133,7 +134,7 @@ function getUpgradeCps(upgrade) {
 /*:･ﾟ✧*:･ﾟ✧ -----  STOCK MARKET  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function adjustStockPortfolio() {
-  if (!bankContent.checkVisibility()) {
+  if (bankContent == null || !bankContent.checkVisibility()) {
     return;
   }
   var analysis = analyzeStockMarket();
@@ -199,7 +200,8 @@ function getStockTradeStr(good, amount) {
 
 function handOfFateToBoostBuffs() {
   if (
-    grimoireSpells.checkVisibility()
+    grimoireSpells != null
+    && grimoireSpells.checkVisibility()
     && buffs.children.length >= 2
     && Grimoire.getSpellCost(Grimoire.spells["hand of fate"]) <= Grimoire.magic
   ) {
@@ -227,14 +229,35 @@ function lastOf(arr) {
   return arr[arr.length - 1];
 }
 
+/*:･ﾟ✧*:･ﾟ✧ -----  FOLLOWUP SYSTEM  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+
+var followupfns = [];
+var requiredhooks = ["logic", "draw"];
+var hithooks = [];
+
 function followup(fn) {
-  var followupidx = timers.length;
-  var timer = setTimeout(() => {
-    timers.splice(followupidx, 1);
-    fn();
-  }, 1);
-  timers.push(timer);
-  return timer;
+  followupfns.push(fn);
+}
+
+function tickFollowups() {
+  followupfns.forEach((fn, i) => {
+    var index = timers.length;
+    var timer = setTimeout(() => {
+      timers.splice(index, 1);
+      fn();
+    }, i * 100);
+    timers.push(timer);
+  });
+  followupfns = [];
+}
+
+function hijackedRunModHook(hook, ...args) {
+  actualRunModHook(hook, ...args);
+  hithooks.push(hook);
+  if (!requiredhooks.some(req => !hithooks.includes(req))) {
+    tickFollowups();
+    hithooks = [];
+  }
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  SCRIPT LIFECYCLE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
@@ -242,6 +265,7 @@ function followup(fn) {
 function cleanup() {
   Object.values(window.cookieclickerhacks.intervals).forEach(clearInterval);
   timers.forEach(clearTimeout);
+  Game.runModHook = actualRunModHook;
 }
 
 function init() {
@@ -257,6 +281,9 @@ function init() {
   intervals.shimmer = setInterval(clickShimmer, 1999);
   intervals.lump = setInterval(harvestLumpIfRipe, 2999);
   intervals.stockmarket = setInterval(adjustStockPortfolio, 4999);
+
+  Game.runModHook = hijackedRunModHook;
+
   if (isRestart) {
     console.log("cookie clicker manager restarted");
   } else {
