@@ -131,15 +131,11 @@ function adjustStockPortfolio() {
   var analysis = analyzeStockMarket();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(good => {
-    var $ = Beautify(good.val * good.stock);
-    var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
-    console.log(`%cCookie manager: buying ${good.symbol} at ${good.val} for $${$} (${cookies} 🍪)`, "color:sienna");
+    console.log(`%cCookie manager: buying ${getStockTradeStr(good)}`, "color:sienna");
     clickOn(document.getElementById(good.l.id + "_Max"));
   });
   toSell.forEach(good => {
-    var $ = Beautify(good.val * good.stock);
-    var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
-    console.log(`%cCookie manager: selling ${good.symbol} at ${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`, "color:green");
+    console.log(`%cCookie manager: selling ${getStockTradeStr(good)}`, "color:green");
     clickOn(document.getElementById(good.l.id + "_-All"));
   });
 }
@@ -179,6 +175,12 @@ function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
     toBuy,
     toSell,
   };
+}
+
+function getStockTradeStr(good) {
+  var $ = Beautify(good.val * good.stock);
+  var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
+  return `${Beautify(good.stock)} ${good.symbol} at $${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`;
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  GRIMOIRE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
@@ -247,6 +249,7 @@ window.cookieclickerhacks = {
   getClickCps,
   getProductCps,
   getUpgradeCps,
+  getStockTradeStr,
   adjustStockPortfolio,
   analyzeStockMarket,
   handOfFateToBoostBuffs,
