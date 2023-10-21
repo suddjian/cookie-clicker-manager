@@ -131,13 +131,13 @@ function adjustStockPortfolio() {
   var analysis = analyzeStockMarket();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(good => {
-    var $ = Math.round(good.val * good.stock);
+    var $ = Beautify(good.val * good.stock);
     var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
     console.log(`%cCookie manager: buying ${good.symbol} at ${good.val} for $${$} (${cookies} 🍪)`, "color:sienna");
     clickOn(document.getElementById(good.l.id + "_Max"));
   });
   toSell.forEach(good => {
-    var $ = Math.round(good.val * good.stock);
+    var $ = Beautify(good.val * good.stock);
     var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
     console.log(`%cCookie manager: selling ${good.symbol} at ${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`, "color:green");
     clickOn(document.getElementById(good.l.id + "_-All"));
