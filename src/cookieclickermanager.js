@@ -131,7 +131,8 @@ function adjustStockPortfolio() {
   var analysis = analyzeStockMarket();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(good => {
-    console.log(`%cCookie manager: buying ${getStockTradeStr(good)}`, "color:sienna");
+    var stockTradeStr = getStockTradeStr(good, StockMarket.getGoodMaxStock(good));
+    console.log(`%cCookie manager: buying ${stockTradeStr}`, "color:sienna");
     clickOn(document.getElementById(good.l.id + "_Max"));
   });
   toSell.forEach(good => {
@@ -177,10 +178,10 @@ function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
   };
 }
 
-function getStockTradeStr(good) {
-  var $ = Beautify(good.val * good.stock);
-  var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
-  return `${Beautify(good.stock)} ${good.symbol} at $${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`;
+function getStockTradeStr(good, amount) {
+  var $ = Beautify(good.val * amount);
+  var cookies = Beautify(Game.cookiesPsRawHighest * good.val * amount);
+  return `${Beautify(amount)} ${good.symbol} at $${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`;
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  GRIMOIRE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
