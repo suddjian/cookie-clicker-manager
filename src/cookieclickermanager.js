@@ -1,6 +1,7 @@
 // a nice middle manager to grow your cookie empire
 
 const Game = window.Game;
+const Beautify = window.Beautify;
 const StockMarket = Game.Objects.Bank.minigame;
 const Grimoire = Game.Objects["Wizard tower"].minigame;
 const bigCookie = document.getElementById("bigCookie");
@@ -130,11 +131,15 @@ function adjustStockPortfolio() {
   var analysis = analyzeStockMarket();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(good => {
-    console.log(`%cCookie manager: buying ${good.symbol} at ${good.val}`, "color:sienna");
+    var $ = Math.round(good.val * good.stock);
+    var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
+    console.log(`%cCookie manager: buying ${good.symbol} at ${good.val} for $${$} (${cookies} 🍪)`, "color:sienna");
     clickOn(document.getElementById(good.l.id + "_Max"));
   });
   toSell.forEach(good => {
-    console.log(`%cCookie manager: selling ${good.symbol} at ${good.val}`, "color:green");
+    var $ = Math.round(good.val * good.stock);
+    var cookies = Beautify(Game.cookiesPsRawHighest * good.val * good.stock);
+    console.log(`%cCookie manager: selling ${good.symbol} at ${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`, "color:green");
     clickOn(document.getElementById(good.l.id + "_-All"));
   });
 }
