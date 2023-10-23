@@ -246,7 +246,7 @@ function init() {
   intervals.hofboost = setInterval(handOfFateToBoostBuffs, 1117);
   intervals.shimmer = setInterval(clickShimmer, 1999);
   intervals.lump = setInterval(harvestLumpIfRipe, 2999);
-  intervals.stockmarket = setInterval(adjustStockPortfolio, 4999);
+  intervals.stockmarket = setInterval(adjustStockPortfolio, 9973);
 
   if (isRestart) {
     console.log("cookie clicker manager restarted");
