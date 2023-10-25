@@ -40,10 +40,7 @@ function harvestLumpIfRipe() {
 /*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function shopGreedily() {
-  if (
-    store.querySelector("#storeBulkBuy.selected") == null
-    || store.querySelector("#storeBulk1.selected") == null
-  ) {
+  if (store.querySelector("#storeBulkBuy.selected") == null) {
     return;
   }
   var item = getShopItemsSortedByProfitability()[0];
@@ -61,14 +58,14 @@ function getShopItemsSortedByProfitability() {
       name: product.name,
       product,
       l: product.l,
-      profitability: getProductCps(product) / product.price
+      profitability: getProductCps(product) * Game.buyBulk / product.bulkPrice
     }));
   var upgrades = Game.UpgradesInStore
     .map((upgrade) => ({
       name: upgrade.name,
       upgrade,
       l: store.querySelector(`#store .upgrade[data-id='${upgrade.id}']`),
-      profitability: getUpgradeCps(upgrade) / upgrade.basePrice,
+      profitability: getUpgradeCps(upgrade) / upgrade.getPrice(),
     }));
   var shopitems = [...products, ...upgrades];
   for (let item in shopitems) {
@@ -223,10 +220,6 @@ function extractPercent(desc) {
   return parseFloat(match) / 100;
 }
 
-function lastOf(arr) {
-  return arr[arr.length - 1];
-}
-
 /*:･ﾟ✧*:･ﾟ✧ -----  SCRIPT LIFECYCLE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function cleanup() {
@@ -272,7 +265,6 @@ window.cookieclickerhacks = {
   adjustStockPortfolio,
   analyzeStockMarket,
   handOfFateToBoostBuffs,
-  lastOf,
   intervals,
   timers,
   cleanup,
