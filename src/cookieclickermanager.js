@@ -65,14 +65,16 @@ function getShopItemsSortedByProfitability() {
       name: upgrade.name,
       upgrade,
       l: store.querySelector(`#store .upgrade[data-id='${upgrade.id}']`),
-      profitability: getUpgradeCps(upgrade) / upgrade.getPrice(),
+      profitability: upgrade.pool === "toggle" ? 0 : getUpgradeCps(upgrade) / upgrade.getPrice(),
     }));
   var shopitems = [...products, ...upgrades];
-  for (let item in shopitems) {
-    if (isNaN(item)) {
+  for (let item of shopitems) {
+    if (isNaN(item.profitability)) {
       console.warn(`Cookie manager: Be advised, bad profitability calculation for ${item.name}`);
+      console.warn(item);
     }
   }
+  shopitems = shopitems.filter(item => !isNaN(item.profitability));
   shopitems.sort((a, b) => b.profitability - a.profitability);
   return shopitems;
 }
@@ -111,7 +113,7 @@ function getUpgradeCps(upgrade) {
   if (upgrade.pool === "cookie") {
     return extractPercent(upgrade.desc) * Game.cookiesPs;
   }
-  if (/golden cookie/i.test(upgrade.desc)) {
+  if (/^golden cookie/i.test(upgrade.desc)) {
     return 0.07 * Game.cookiesPs;
   }
   if (upgrade.pool === "kitten" || /^kitten /i.test(upgrade.name)) {  
@@ -119,6 +121,10 @@ function getUpgradeCps(upgrade) {
   }
   if (/^cookie production multiplier /i.test(upgrade.desc)) {
     return Game.cookiesPs * extractPercent(upgrade.desc);
+  }
+  if (/potential of your prestige level/i.test(upgrade.desc)) {
+    const heavenlyMultiplier = parseFloat(Game.prestige)*Game.heavenlyPower*Game.GetHeavenlyMultiplier()*0.01;
+    return Game.cookiesPs * heavenlyMultiplier;
   }
   if (upgrade.buildingTie) {
     return getProductCps(upgrade.buildingTie) * upgrade.buildingTie.amount;
