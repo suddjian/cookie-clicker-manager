@@ -39,6 +39,12 @@ function harvestLumpIfRipe() {
   }
 }
 
+function popWrinklers() {
+  for (var w of Game.wrinklers) {
+    w.hp = 0;
+  }
+}
+
 /*:･ﾟ✧*:･ﾟ✧ -----  SHOPPING  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function shopGreedily() {
@@ -270,6 +276,9 @@ window.cookieclickerhacks = {
   clicksps,
   clickOn,
   clickBigCookie,
+  clickShimmer,
+  harvestLumpIfRipe,
+  popWrinklers,
   shopGreedily,
   extractNum,
   extractPercent,
