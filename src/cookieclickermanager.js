@@ -28,7 +28,9 @@ function clickBigCookie() {
 }
 
 function clickShimmer() {
-  Array.from(document.getElementsByClassName("shimmer")).forEach(s => clickOn(s));
+  Array.from(document.getElementsByClassName("shimmer")).forEach(l => {
+    clickOn(l);
+  });
 }
 
 function harvestLumpIfRipe() {
@@ -170,8 +172,16 @@ function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
   );
   var buyAt = minVal + (maxVal * buyPercentile);
   var sellAt = maxVal - (maxVal * sellPercentile);
+  var totalCost = 0;
   var toBuy = goods.filter(
-    good => good.val < buyAt && good.stock < StockMarket.getGoodMaxStock(good)
+    good => {
+      totalCost += good.val * (StockMarket.getGoodMaxStock(good) - good.stock);
+      return (
+        good.val < buyAt
+        && good.stock < StockMarket.getGoodMaxStock(good)
+        && Game.cookies > totalCost
+      );
+    }
   );
   var toSell = goods.filter(
     good => good.val > sellAt && good.stock > 0
@@ -245,7 +255,7 @@ function init() {
   intervals.hofboost = setInterval(handOfFateToBoostBuffs, 1117);
   intervals.shimmer = setInterval(clickShimmer, 1999);
   intervals.lump = setInterval(harvestLumpIfRipe, 2999);
-  intervals.stockmarket = setInterval(adjustStockPortfolio, 9973);
+  intervals.stockmarket = setInterval(adjustStockPortfolio, 49999);
 
   if (isRestart) {
     console.log("cookie clicker manager restarted");
