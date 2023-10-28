@@ -124,7 +124,7 @@ function getUpgradeCps(upgrade) {
   if (/^golden cookie/i.test(upgrade.desc)) {
     return 0.07 * Game.cookiesPs;
   }
-  if (upgrade.pool === "kitten" || /^kitten /i.test(upgrade.name)) {  
+  if (upgrade.pool === "kitten" || /^kitten /i.test(upgrade.name)) {
     return Game.cookiesPs * 0.5;
   }
   if (/^cookie production multiplier /i.test(upgrade.desc)) {
@@ -146,20 +146,60 @@ function adjustStockPortfolio() {
   if (bankContent == null || !bankContent.checkVisibility()) {
     return;
   }
-  var analysis = analyzeStockMarket();
+  var analysis = analyzeStockMarketV2();
   var { toBuy, toSell } = analysis;
-  toBuy.forEach(good => {
-    var stockTradeStr = getStockTradeStr(good, StockMarket.getGoodMaxStock(good));
+  toBuy.forEach(({ good, max }) => {
+    var stockTradeStr = getStockTradeStr(good, max);
     console.log(`%cCookie manager: buying ${stockTradeStr}`, "color:sienna");
     clickOn(document.getElementById(good.l.id + "_Max"));
   });
-  toSell.forEach(good => {
-    console.log(`%cCookie manager: selling ${getStockTradeStr(good)}`, "color:green");
+  toSell.forEach(({ good }) => {
+    console.log(`%cCookie manager: selling ${getStockTradeStr(good, good.stock)}`, "color:green");
     clickOn(document.getElementById(good.l.id + "_-All"));
   });
 }
 
-function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
+function analyzeStockMarketV2() {
+  // buy below stddev, sell above
+  var goods = Object.values(StockMarket.goods).sort((a, b) => a.id - b.id);
+  if (goods.length < 3) {
+    return null;
+  }
+
+  var maxes = goods.map(good => StockMarket.getGoodMaxStock(good));
+  var marketcaps = goods.map((good, i) => good.val * maxes[i]);
+  var avgmktcap = marketcaps.reduce((a, b) => a + b) / marketcaps.length;
+  var summation = marketcaps.reduce((acc, num) => {
+    var dev = avgmktcap - num;
+    return acc + dev * dev;
+  }, 0);
+  var mktcapstddev = Math.sqrt(summation / marketcaps.length);
+
+  var thegoods = goods.map((good, i) => ({
+    good,
+    max: maxes[i],
+    marketcap: marketcaps[i]
+  }));
+  var brokersPercent = 0.2 * Math.pow(0.95,StockMarket.brokers);
+  var buyAt = avgmktcap - mktcapstddev;
+  buyAt -= brokersPercent * buyAt;
+  var sellAt = avgmktcap + mktcapstddev;
+
+  var budgeted = 0;
+  var toBuy = thegoods.filter(({ good, marketcap, max }) => {
+    var cost = good.val * (max - good.stock);
+    var shouldBuy = marketcap < buyAt && good.stock < max && Game.cookies > budgeted + cost;
+    if (shouldBuy) {
+      budgeted += cost;
+    }
+    return shouldBuy;
+  });
+  var toSell = thegoods.filter(({ good, marketcap }) => marketcap > sellAt && good.stock > 0);
+
+  return { toBuy, toSell, buyAt, sellAt, mktcapstddev, avgmktcap, thegoods };
+}
+
+function analyzeStockMarketV1(buyPercentile=0.1, sellPercentile=0.3) {
   // buy low sell high
   var goods = Object.values(StockMarket.goods).filter(good => !good.hidden);
   if (goods.length < 3) {
@@ -205,9 +245,6 @@ function analyzeStockMarket(buyPercentile=0.1, sellPercentile=0.3) {
 }
 
 function getStockTradeStr(good, amount) {
-  if (amount == null) {
-    amount = good.stock;
-  }
   var $ = Beautify(good.val * amount);
   var cookies = Beautify(Game.cookiesPsRawHighest * good.val * amount);
   return `${Beautify(amount)} ${good.symbol} at $${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`;
@@ -288,7 +325,8 @@ window.cookieclickerhacks = {
   getUpgradeCps,
   getStockTradeStr,
   adjustStockPortfolio,
-  analyzeStockMarket,
+  analyzeStockMarketV1,
+  analyzeStockMarketV2,
   handOfFateToBoostBuffs,
   intervals,
   timers,
