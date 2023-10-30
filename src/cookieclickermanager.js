@@ -7,18 +7,17 @@ const Grimoire = Game.Objects["Wizard tower"].minigame;
 const bigCookie = document.getElementById("bigCookie");
 const lumps = document.getElementById("lumps");
 const store = document.getElementById("store");
-const buffs = document.getElementById("buffs");
-const bankContent = document.getElementById("bankContent");
-const grimoireSpells = document.getElementById("grimoireSpells");
 
 var clicksps = 100;
 var intervals = {};
 var timers = [];
+var lastBoostedAt = 0;
 
 /*:･ﾟ✧*:･ﾟ✧ -----  UI ACTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function clickOn(l) {
   // unknown why, but .click() is unreliable.
+  if (!l) return;
   var e = new Event("click", { bubbles: true, cancelable: true });
   l.dispatchEvent(e);
 }
@@ -131,7 +130,7 @@ function getUpgradeCps(upgrade) {
     return Game.cookiesPs * extractPercent(upgrade.desc);
   }
   if (/potential of your prestige level/i.test(upgrade.desc)) {
-    const heavenlyMultiplier = parseFloat(Game.prestige)*Game.heavenlyPower*Game.GetHeavenlyMultiplier()*0.01;
+    var heavenlyMultiplier = parseFloat(Game.prestige)*Game.heavenlyPower*Game.GetHeavenlyMultiplier()*0.01;
     return Game.cookiesPs * heavenlyMultiplier;
   }
   if (upgrade.buildingTie) {
@@ -143,9 +142,7 @@ function getUpgradeCps(upgrade) {
 /*:･ﾟ✧*:･ﾟ✧ -----  STOCK MARKET  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function adjustStockPortfolio() {
-  if (bankContent == null || !bankContent.checkVisibility()) {
-    return;
-  }
+  if (!findGameElement("bankContent")) return;
   var analysis = analyzeStockMarketV2();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(({ good, max }) => {
@@ -187,10 +184,10 @@ function analyzeStockMarketV2() {
 
   var budgeted = 0;
   var toBuy = thegoods.filter(({ good, marketcap, max }) => {
-    var cost = good.val * (max - good.stock);
-    var shouldBuy = marketcap < buyAt && good.stock < max && Game.cookies > budgeted + cost;
+    var proposedBudget = budgeted + good.val * (max - good.stock);
+    var shouldBuy = marketcap < buyAt && good.stock < max && Game.cookies > proposedBudget;
     if (shouldBuy) {
-      budgeted += cost;
+      budgeted = proposedBudget;
     }
     return shouldBuy;
   });
@@ -250,18 +247,61 @@ function getStockTradeStr(good, amount) {
   return `${Beautify(amount)} ${good.symbol} at $${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`;
 }
 
-/*:･ﾟ✧*:･ﾟ✧ -----  GRIMOIRE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
+/*:･ﾟ✧*:･ﾟ✧ -----  COMBOS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
-function handOfFateToBoostBuffs() {
+function boostBuffs() {
+  var [nerfs, buffs] = partition(
+    Object.values(Game.buffs),
+    buff => buff.name === "Clot" || buff.multCpS < 1
+  );
+  if (nerfs.length) return;
+
+  var grimoireSpells = findGameElement("grimoireSpells");
+  var handOfFate = Grimoire.spells["hand of fate"];
+  var stretchTime = Grimoire.spells["stretch time"];
+  var bankLoan1 = findGameElement("bankLoan1");
+  var bankLoan2 = findGameElement("bankLoan2");
+  var boosted = false;
+
   if (
-    grimoireSpells != null
-    && grimoireSpells.checkVisibility()
-    && buffs.children.length >= 2
-    && Grimoire.getSpellCost(Grimoire.spells["hand of fate"]) <= Grimoire.magic
+    buffs.length >= 2
+    && grimoireSpells 
+    && Grimoire.getSpellCost(handOfFate) <= Grimoire.magic
   ) {
-    const handOfFateL = grimoireSpells.children[Grimoire.spells["hand of fate"].id];
     console.log("%cCookie manager forcing the hand of fate to boost buffs", "color:slateblue");
-    clickOn(handOfFateL);
+    boosted = true;
+    clickOn(grimoireSpells.children[handOfFate.id]);
+  }
+  if (buffs.length >= 3 && bankLoan1 && !bankLoan1.classList.contains("bankButtonOff")) {
+    console.log("%cCookie manager taking out first loan to boost buffs", "color:slateblue");
+    boosted = true;
+    clickOn(bankLoan1);
+  }
+  if (buffs.length >= 4 && bankLoan2 && !bankLoan2.classList.contains("bankButtonOff")) {
+    console.log("%cCookie manager taking out second loan to boost buffs", "color:slateblue");
+    boosted = true;
+    clickOn(bankLoan2);
+  }
+  if (buffs.length >= 3 && grimoireSpells && Grimoire.getSpellCost(stretchTime) <= Grimoire.magic) {
+    console.log("%cCookie manager stretching time to boost buffs", "color:slateblue");
+    boosted = true;
+    clickOn(grimoireSpells.children[stretchTime.id]);
+  }
+  if (boosted) {
+    var hasntBoostedInAWhile = Date.now() - lastBoostedAt > 5 * 60000;
+    if (hasntBoostedInAWhile) {
+      console.log(`%cCurrent CpS: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
+      setTimeout(() => {
+        console.log(`%cCpS 5s after boost: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
+      }, 5000);
+      setTimeout(() => {
+        console.log(`%cCpS 10s after boost: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
+      }, 10000);
+      setTimeout(() => {
+        console.log(`%cCpS 1m after boost: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
+      }, 60000);
+    }
+    lastBoostedAt = Date.now();
   }
 }
 
@@ -277,6 +317,24 @@ function extractPercent(desc) {
   var match = /((?:\d*\.)?\d+)%/.exec(desc);
   if (!match) return 0;
   return parseFloat(match) / 100;
+}
+
+function partition(arr, fn) {
+  var truthy = [];
+  var falsy = [];
+  arr.forEach((it, i) => {
+    if (fn(it, i)) {
+      truthy.push(it);
+    } else {
+      falsy.push(it);
+    }
+  });
+  return [truthy, falsy];
+}
+
+function findGameElement(id) {
+  var el = document.getElementById(id);
+  if (el != null && el.checkVisibility()) return el;
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  SCRIPT LIFECYCLE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
@@ -295,7 +353,7 @@ function init() {
   intervals.click = setInterval(clickBigCookie, 1000 / clicksps);
   /* primes bcuz */
   intervals.buy = setInterval(shopGreedily, 997);
-  intervals.hofboost = setInterval(handOfFateToBoostBuffs, 1117);
+  intervals.boost = setInterval(boostBuffs, 1117);
   intervals.shimmer = setInterval(clickShimmer, 1999);
   intervals.lump = setInterval(harvestLumpIfRipe, 2999);
   intervals.stockmarket = setInterval(adjustStockPortfolio, 49999);
@@ -327,7 +385,7 @@ window.cookieclickerhacks = {
   adjustStockPortfolio,
   analyzeStockMarketV1,
   analyzeStockMarketV2,
-  handOfFateToBoostBuffs,
+  boostBuffs,
   intervals,
   timers,
   cleanup,
