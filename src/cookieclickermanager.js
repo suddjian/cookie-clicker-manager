@@ -2,6 +2,7 @@
 
 const Game = window.Game;
 const Beautify = window.Beautify;
+const numberFormatters = window.numberFormatters;
 const StockMarket = Game.Objects.Bank.minigame;
 const Grimoire = Game.Objects["Wizard tower"].minigame;
 const bigCookie = document.getElementById("bigCookie");
@@ -11,7 +12,6 @@ const store = document.getElementById("store");
 var clicksps = 100;
 var intervals = {};
 var timers = [];
-var lastBoostedAt = 0;
 
 /*:･ﾟ✧*:･ﾟ✧ -----  UI ACTIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
@@ -65,7 +65,7 @@ function getShopItemsSortedByProfitability() {
       name: product.name,
       product,
       l: product.l,
-      profitability: getProductCps(product) * Game.buyBulk / product.bulkPrice
+      profitability: getProductNetCps(product) * Game.buyBulk / product.bulkPrice
     }));
   var upgrades = Game.UpgradesInStore
     .map((upgrade) => ({
@@ -88,12 +88,20 @@ function getShopItemsSortedByProfitability() {
 
 /*:･ﾟ✧*:･ﾟ✧ -----  CPS CALCULATIONS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
-function getProductCps(product) {
-  return (product.amount ? product.storedTotalCps / product.amount : product.storedCps) * Game.globalCpsMult;
+function getBoostMult() {
+  return Game.cookiesPs / Game.cookiesPsRaw;
+}
+
+function getProductNetCps(product) {
+  return product.storedTotalCps * Game.globalCpsMult;
 }
 
 function getClickCps() {
   return !intervals.click ? 0 : Game.computedMouseCps * clicksps;
+}
+
+function getHeavenlyMultiplier() {
+  return parseFloat(Game.prestige)*Game.heavenlyPower*Game.GetHeavenlyMultiplier();
 }
 
 function getUpgradeCps(upgrade) {
@@ -102,20 +110,20 @@ function getUpgradeCps(upgrade) {
     clausegrandmas = parseInt(clausegrandmas);
     var building = Object.values(Game.Objects)
       .find((b) => buildingclause.includes(b.plural));
-    var buildingbonus = !building  ?  0  :  getProductCps(building) * extractPercent(buildingclause) * (Game.Objects.Grandma.amount / clausegrandmas);
-    return getProductCps(Game.Objects.Grandma) + buildingbonus;
+    var buildingbonus = !building  ?  0  :  getProductNetCps(building) * extractPercent(buildingclause) * (Game.Objects.Grandma.amount / clausegrandmas);
+    return getProductNetCps(Game.Objects.Grandma) + buildingbonus;
   }
   if (/ mouse$/i.test(upgrade.name)) {
     return extractPercent(upgrade.desc) * getClickCps();
   }
   if (/The mouse and cursors are /i.test(upgrade.desc)) {
     // twice as efficient
-    return getProductCps(Game.Objects.Cursor) + getClickCps();
+    return getProductNetCps(Game.Objects.Cursor) + getClickCps();
   }
   if (/ fingers$/i.test(upgrade.name)) {
     // plus X cookies for each non-cursor building
     var buildings = Game.BuildingsOwned - Game.Objects.Cursor.amount;
-    return extractNum(upgrade.desc) * buildings * (Game.Objects.Cursor.amount + clicksps);
+    return extractNum(upgrade.desc) * buildings * (Game.Objects.Cursor.amount + clicksps) * Game.globalCpsMult;
   }
   if (upgrade.pool === "cookie") {
     return extractPercent(upgrade.desc) * Game.cookiesPs;
@@ -130,11 +138,22 @@ function getUpgradeCps(upgrade) {
     return Game.cookiesPs * extractPercent(upgrade.desc);
   }
   if (/potential of your prestige level/i.test(upgrade.desc)) {
-    var heavenlyMultiplier = parseFloat(Game.prestige)*Game.heavenlyPower*Game.GetHeavenlyMultiplier()*0.01;
-    return Game.cookiesPs * heavenlyMultiplier;
+    return Game.cookiesPs * getHeavenlyMultiplier();
+  }
+  if (/^synergy\d+/i.test(upgrade.tier) && upgrade.buildingTie1 && upgrade.buildingTie2) {
+    var building1 = upgrade.buildingTie1;
+    var building2 = upgrade.buildingTie2;
+    var bldg1reg = new RegExp(`${building1.plural} gain (.+) CpS per ${building2.single}`, "i");
+    var bldg2reg = new RegExp(`${building2.plural} gain (.+) CpS per ${building1.single}`, "i");
+    var percent1 = extractPercent(bldg1reg.exec(upgrade.desc)[1]);
+    var percent2 = extractPercent(bldg2reg.exec(upgrade.desc)[1]);
+    return (
+      getProductNetCps(building1) * percent1 * building2.amount
+      + getProductNetCps(building2) * percent2 * building1.amount
+    );
   }
   if (upgrade.buildingTie) {
-    return getProductCps(upgrade.buildingTie) * upgrade.buildingTie.amount;
+    return getProductNetCps(upgrade.buildingTie);
   }
   return 0;
 }
@@ -242,66 +261,99 @@ function analyzeStockMarketV1(buyPercentile=0.1, sellPercentile=0.3) {
 }
 
 function getStockTradeStr(good, amount) {
-  var $ = Beautify(good.val * amount);
-  var cookies = Beautify(Game.cookiesPsRawHighest * good.val * amount);
-  return `${Beautify(amount)} ${good.symbol} at $${Beautify(good.val, 2)} for $${$} (${cookies} 🍪)`;
+  var $ = Beaut(good.val * amount);
+  var cookies = Beaut(Game.cookiesPsRawHighest * good.val * amount);
+  return `${Beaut(amount)} ${good.symbol} at $${Beaut(good.val, 2)} for $${$} (${cookies} 🍪)`;
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  COMBOS  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
-function boostBuffs() {
-  var [nerfs, buffs] = partition(
-    Object.values(Game.buffs),
-    buff => buff.name === "Clot" || buff.multCpS < 1
-  );
-  if (nerfs.length) return;
+var currentcombo = null;
+var combonum = 0;
 
+function combolog(str) {
+  console.log(`%c[Combo ${combonum}] ${str}`, "color:slateblue");
+}
+
+function combologWithCpS(preamble) {
+  var cpsstr = `\n\t└─ ${Beaut(Game.cookiesPs)} CpS, ${Beaut(Game.cookies)} 🍪, ${Beaut(getBoostMult(), 3)}x boost`;
+  combolog(preamble + cpsstr);
+}
+
+function startCombo() {
+  combonum++;
+  currentcombo = {
+    hof: 0,
+    loan1: 0,
+    loan2: 0,
+    stretch: 0,
+    buffnames: new Set(),
+  };
+  combolog("New combo");
+}
+
+function boostBuffs() {
+  var [nerfs, buffs] = partition(Object.values(Game.buffs), buff => (buff.multCpS != null && buff.multCpS < 1));
+  var cpsbuffs = buffs.filter(buff => buff.multCpS > 1 || buff.multClick > 1);
+
+  // is there anything to boost?
+  if (nerfs.length > 0 || cpsbuffs.length === 0) {
+    if (currentcombo) {
+      combologWithCpS("Combo ended.");
+      console.log({ nerfs, buffs });
+      currentcombo = null;
+    }
+    return;
+  }
+
+  // should we start a combo?
+  if (cpsbuffs.length >= 2 && currentcombo == null) {
+    startCombo();
+  }
+
+  if (currentcombo == null) return;
+
+  // updating the combo stats
+  var endedbuffs = Array.from(currentcombo.buffnames).filter(name => !buffs.some(buff => buff.name === name));
+  endedbuffs.forEach(name => currentcombo.buffnames.delete(name));
+  if (endedbuffs.length > 0) {
+    combologWithCpS(`${endedbuffs.join(", ")} ended.`);
+  }
+
+  var newbuffs = cpsbuffs.filter(buff => !currentcombo.buffnames.has(buff.name));
+  newbuffs.forEach(buff => currentcombo.buffnames.add(buff.name));
+  if (newbuffs.length > 0) {
+    var names = newbuffs.map(b => b.name).join(", ");
+    combologWithCpS(`${names} started.`);
+    console.log(...newbuffs);
+  }
+
+  // applying combo buffs
   var grimoireSpells = findGameElement("grimoireSpells");
   var handOfFate = Grimoire.spells["hand of fate"];
   var stretchTime = Grimoire.spells["stretch time"];
   var bankLoan1 = findGameElement("bankLoan1");
   var bankLoan2 = findGameElement("bankLoan2");
-  var boosted = false;
 
-  if (
-    buffs.length >= 2
-    && grimoireSpells 
-    && Grimoire.getSpellCost(handOfFate) <= Grimoire.magic
-  ) {
-    console.log("%cCookie manager forcing the hand of fate to boost buffs", "color:slateblue");
-    boosted = true;
+  if (cpsbuffs.length >= 2 && grimoireSpells && Grimoire.getSpellCost(handOfFate) <= Grimoire.magic && !currentcombo.hof) {
+    combolog("forcing the hand of fate");
+    currentcombo.hof++;
     clickOn(grimoireSpells.children[handOfFate.id]);
   }
-  if (buffs.length >= 3 && bankLoan1 && !bankLoan1.classList.contains("bankButtonOff")) {
-    console.log("%cCookie manager taking out first loan to boost buffs", "color:slateblue");
-    boosted = true;
-    clickOn(bankLoan1);
-  }
-  if (buffs.length >= 4 && bankLoan2 && !bankLoan2.classList.contains("bankButtonOff")) {
-    console.log("%cCookie manager taking out second loan to boost buffs", "color:slateblue");
-    boosted = true;
-    clickOn(bankLoan2);
-  }
-  if (buffs.length >= 3 && grimoireSpells && Grimoire.getSpellCost(stretchTime) <= Grimoire.magic) {
-    console.log("%cCookie manager stretching time to boost buffs", "color:slateblue");
-    boosted = true;
+  if (cpsbuffs.length >= 3 && grimoireSpells && Grimoire.getSpellCost(stretchTime) <= Grimoire.magic && !currentcombo.stretch) {
+    combolog("stretching time");
+    currentcombo.stretch++;
     clickOn(grimoireSpells.children[stretchTime.id]);
   }
-  if (boosted) {
-    var hasntBoostedInAWhile = Date.now() - lastBoostedAt > 5 * 60000;
-    if (hasntBoostedInAWhile) {
-      console.log(`%cCurrent CpS: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
-      setTimeout(() => {
-        console.log(`%cCpS 5s after boost: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
-      }, 5000);
-      setTimeout(() => {
-        console.log(`%cCpS 10s after boost: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
-      }, 10000);
-      setTimeout(() => {
-        console.log(`%cCpS 1m after boost: ${Game.cookiesPs}; ${Beautify(Game.cookies)} cookies`, "color:slateblue");
-      }, 60000);
-    }
-    lastBoostedAt = Date.now();
+  if (cpsbuffs.length >= 3 && bankLoan1 && !bankLoan1.classList.contains("bankButtonOff") && !currentcombo.loan1) {
+    combolog("taking out first loan");
+    currentcombo.loan1++;
+    clickOn(bankLoan1);
+  }
+  if (cpsbuffs.length >= 4 && bankLoan2 && !bankLoan2.classList.contains("bankButtonOff") && !currentcombo.loan2) {
+    combolog("taking out second loan");
+    currentcombo.loan2++;
+    clickOn(bankLoan2);
   }
 }
 
@@ -337,6 +389,14 @@ function findGameElement(id) {
   if (el != null && el.checkVisibility()) return el;
 }
 
+function Beaut(num, floats) {
+  const prevfmt = numberFormatters[1];
+  numberFormatters[1] = numberFormatters[0]; // get short numbers
+  var result = Beautify(num, floats);
+  numberFormatters[1] = prevfmt;
+  return result;
+}
+
 /*:･ﾟ✧*:･ﾟ✧ -----  SCRIPT LIFECYCLE  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function cleanup() {
@@ -352,16 +412,16 @@ function init() {
 
   intervals.click = setInterval(clickBigCookie, 1000 / clicksps);
   /* primes bcuz */
+  intervals.boost = setInterval(boostBuffs, 499);
   intervals.buy = setInterval(shopGreedily, 997);
-  intervals.boost = setInterval(boostBuffs, 1117);
   intervals.shimmer = setInterval(clickShimmer, 1999);
   intervals.lump = setInterval(harvestLumpIfRipe, 2999);
   intervals.stockmarket = setInterval(adjustStockPortfolio, 49999);
 
   if (isRestart) {
-    console.log("cookie clicker manager restarted");
+    console.log("cookie clicker manager restarted, built at __BUILD_TIMESTAMP__");
   } else {
-    console.log("cookie clicker manager started");
+    console.log("cookie clicker manager started, built at __BUILD_TIMESTAMP__");
   }
 }
 
@@ -378,14 +438,21 @@ window.cookieclickerhacks = {
   extractNum,
   extractPercent,
   getShopItemsSortedByProfitability,
+  getBoostMult,
   getClickCps,
-  getProductCps,
+  getProductNetCps,
   getUpgradeCps,
   getStockTradeStr,
   adjustStockPortfolio,
   analyzeStockMarketV1,
   analyzeStockMarketV2,
+  combolog,
+  combologWithCpS,
+  startCombo,
+  getCurrentCombo: () => currentcombo,
   boostBuffs,
+  findGameElement,
+  partition,
   intervals,
   timers,
   cleanup,
