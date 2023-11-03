@@ -65,7 +65,7 @@ function getShopItemsSortedByProfitability() {
       name: product.name,
       product,
       l: product.l,
-      profitability: getProductNetCps(product) * Game.buyBulk / product.bulkPrice
+      profitability: getProductIndividualCps(product) * Game.buyBulk / product.bulkPrice
     }));
   var upgrades = Game.UpgradesInStore
     .map((upgrade) => ({
@@ -92,8 +92,12 @@ function getBoostMult() {
   return Game.cookiesPs / Game.cookiesPsRaw;
 }
 
+function getProductIndividualCps(product) {
+  return product.storedCps * Game.globalCpsMult;
+}
+
 function getProductNetCps(product) {
-  return product.storedTotalCps * Game.globalCpsMult;
+  return getProductIndividualCps(product) * product.amount;
 }
 
 function getClickCps() {
