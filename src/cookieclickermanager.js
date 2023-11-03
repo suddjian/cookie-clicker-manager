@@ -165,7 +165,7 @@ function getUpgradeCps(upgrade) {
 /*:･ﾟ✧*:･ﾟ✧ -----  STOCK MARKET  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
 
 function adjustStockPortfolio() {
-  if (!findGameElement("bankContent")) return;
+  if (!findGameElement("#bankContent")) return;
   var analysis = analyzeStockMarketV2();
   var { toBuy, toSell } = analysis;
   toBuy.forEach(({ good, max }) => {
@@ -287,10 +287,7 @@ function combologWithCpS(preamble) {
 function startCombo() {
   combonum++;
   currentcombo = {
-    hof: 0,
-    loan1: 0,
-    loan2: 0,
-    stretch: 0,
+    cooldowns: {},
     buffnames: new Set(),
   };
   combolog("New combo");
@@ -310,7 +307,6 @@ function boostBuffs() {
     return;
   }
 
-  // should we start a combo?
   if (cpsbuffs.length >= 2 && currentcombo == null) {
     startCombo();
   }
@@ -329,36 +325,67 @@ function boostBuffs() {
   if (newbuffs.length > 0) {
     var names = newbuffs.map(b => b.name).join(", ");
     combologWithCpS(`${names} started.`);
-    console.log(...newbuffs);
+    console.log(buffs);
   }
 
   // applying combo buffs
-  var grimoireSpells = findGameElement("grimoireSpells");
+  var grimoireSpells = findGameElement("#grimoireSpells");
   var handOfFate = Grimoire.spells["hand of fate"];
   var stretchTime = Grimoire.spells["stretch time"];
-  var bankLoan1 = findGameElement("bankLoan1");
-  var bankLoan2 = findGameElement("bankLoan2");
 
-  if (cpsbuffs.length >= 2 && grimoireSpells && Grimoire.getSpellCost(handOfFate) <= Grimoire.magic && !currentcombo.hof) {
-    combolog("forcing the hand of fate");
-    currentcombo.hof++;
-    clickOn(grimoireSpells.children[handOfFate.id]);
+  var strats = {
+    "hand of fate": {
+      buffs: 2,
+      l: Grimoire.magic >= Grimoire.magicM && grimoireSpells?.children[handOfFate.id],
+    },
+    "stretch time": {
+      buffs: 3,
+      l: Grimoire.magic > Grimoire.getSpellCost(handOfFate) && grimoireSpells?.children[stretchTime.id],
+    },
+    "first loan": {
+      buffs: 4,
+      l: findGameElement("#bankLoan1:not(.bankButtonOff)"),
+    },
+    "second loan": {
+      buffs: 4,
+      l: findGameElement("#bankLoan2:not(.bankButtonOff)"),
+    },
+    "golden switch": {
+      buffs: 4,
+      l: findGameElement(`#store .upgrade.enabled[data-id="${Game.Upgrades["Golden switch [off]"].id}"]`),
+    }
+  };
+
+  for (var [name, strat] of Object.entries(strats)) {
+    if (cpsbuffs.length >= strat.buffs && strat.l && currentcombo.cooldowns[name] <= 0) {
+      combolog(`using ${name}`);
+      currentcombo.cooldowns[name] = 10;
+      clickOn(strat.l);
+    } else {
+      currentcombo.cooldowns[name] = Math.max(0, currentcombo.cooldowns[name]??0 - 1);
+    }
   }
-  if (cpsbuffs.length >= 3 && grimoireSpells && Grimoire.getSpellCost(stretchTime) <= Grimoire.magic && !currentcombo.stretch) {
-    combolog("stretching time");
-    currentcombo.stretch++;
-    clickOn(grimoireSpells.children[stretchTime.id]);
-  }
-  if (cpsbuffs.length >= 3 && bankLoan1 && !bankLoan1.classList.contains("bankButtonOff") && !currentcombo.loan1) {
-    combolog("taking out first loan");
-    currentcombo.loan1++;
-    clickOn(bankLoan1);
-  }
-  if (cpsbuffs.length >= 4 && bankLoan2 && !bankLoan2.classList.contains("bankButtonOff") && !currentcombo.loan2) {
-    combolog("taking out second loan");
-    currentcombo.loan2++;
-    clickOn(bankLoan2);
-  }
+
+  // if (cpsbuffs.length >= 2 && grimoireSpells && Grimoire.getSpellCost(handOfFate) <= Grimoire.magic && !currentcombo.coolhof) {
+  //   combolog("forcing the hand of fate");
+  //   currentcombo.coolhof += 10;
+  //   clickOn(grimoireSpells.children[handOfFate.id]);
+  // } else { currentcombo.coolhof = Math.max(0, currentcombo.coolhof - 1); }
+  // if (cpsbuffs.length >= 3 && grimoireSpells && Grimoire.getSpellCost(stretchTime) <= Grimoire.magic && !currentcombo.coolstretch) {
+  //   combolog("stretching time");
+  //   currentcombo.coolstretch += 10;
+  //   clickOn(grimoireSpells.children[stretchTime.id]);
+  // } else { currentcombo.coolstretch = Math.max(0, currentcombo.coolstretch - 1); }
+  // if (cpsbuffs.length >= 3 && bankLoan1 && !bankLoan1.classList.contains("bankButtonOff") && !currentcombo.coolloan1) {
+  //   combolog("taking out first loan");
+  //   currentcombo.coolloan1 += 10;
+  //   clickOn(bankLoan1);
+  // } else { currentcombo.coolloan1 = Math.max(0, currentcombo.coolloan1 - 1); }
+  // if (cpsbuffs.length >= 4 && bankLoan2 && !bankLoan2.classList.contains("bankButtonOff") && !currentcombo.coolloan2) {
+  //   combolog("taking out second loan");
+  //   currentcombo.coolloan2 += 10;
+  //   clickOn(bankLoan2);
+  // } else { currentcombo.coolloan2 = Math.max(0, currentcombo.coolloan2 - 1); }
 }
 
 /*:･ﾟ✧*:･ﾟ✧ -----  UTILITIES  ----- *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ *:･ﾟ✧*:･ﾟ✧ */
@@ -388,8 +415,8 @@ function partition(arr, fn) {
   return [truthy, falsy];
 }
 
-function findGameElement(id) {
-  var el = document.getElementById(id);
+function findGameElement(query) {
+  var el = document.querySelector(query);
   if (el != null && el.checkVisibility()) return el;
 }
 
@@ -423,9 +450,9 @@ function init() {
   intervals.stockmarket = setInterval(adjustStockPortfolio, 49999);
 
   if (isRestart) {
-    console.log("cookie clicker manager restarted, built at __BUILD_TIMESTAMP__");
+    console.log("cookie clicker manager restarted, build ts __BUILD_TIMESTAMP__");
   } else {
-    console.log("cookie clicker manager started, built at __BUILD_TIMESTAMP__");
+    console.log("cookie clicker manager started, build ts __BUILD_TIMESTAMP__");
   }
 }
 
